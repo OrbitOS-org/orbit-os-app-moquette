@@ -39,15 +39,20 @@ Runs on Raspberry Pi, Arduino UNO Q and other ARM64 devices with Orbit OS (free 
 
 You need [VS Code](https://code.visualstudio.com/) with the Orbit Studio extension and a **Java 17 JDK** installed (for example [Eclipse Temurin 17](https://adoptium.net/); `java` on your PATH).
 
-1. Clone the repository **with its submodule** (the Orbit OS Java SDK) and open the folder in VS Code with the Orbit Studio extension:
+1. Clone the repository and open the folder in VS Code with the Orbit Studio extension:
    ```bash
-   git clone --recurse-submodules https://github.com/OrbitOS-org/orbit-os-app-moquette
+   git clone https://github.com/OrbitOS-org/orbit-os-app-moquette
    code orbit-os-app-moquette
    ```
 2. In the Orbit sidebar, set your device's IP.
-3. Use **Run** to try it live against a device in Developer Mode, then **Build + Deploy** to install the signed `.orb`.
+3. Use **Run** to try it live against a device in Developer Mode, then **Build + Deploy** to install the signed `.orb`. Orbit Studio downloads the Orbit OS Java SDK into `orbit-os-sdk-java/` the first time (or run **Orbit: Add / Update SDK**).
 
-**Without Orbit Studio:** `./gradlew :apps:moquette:shadowJar` builds the JAR (Java 17) — use Orbit Studio to package and sign the `.orb`.
+**Without Orbit Studio:** clone the [Orbit OS Java SDK](https://github.com/OrbitOS-org/orbit-os-sdk-java) into the project folder, then build the JAR (Java 17) — use Orbit Studio to package and sign the `.orb`:
+
+```bash
+git clone --branch v26.0.3 --depth 1 https://github.com/OrbitOS-org/orbit-os-sdk-java
+./gradlew :apps:moquette:shadowJar
+```
 
 ## Getting started
 
@@ -64,7 +69,7 @@ This project follows the [Orbit Studio](https://marketplace.visualstudio.com/ite
 |---|---|
 | `apps/moquette/` | app source — `App.java` (startup), `broker/` (embedded Moquette, config, MQTT users, event bridge), `admin/` (admin HTTP server + auth), `src/main/resources/admin/` (web UI), `metadata.json` (manifest & permissions) |
 | `apps/moquette/orb/icon.svg` | launcher / Store icon |
-| `orbit-os-sdk-java/` | [Orbit OS Java SDK](https://github.com/OrbitOS-org/orbit-os-sdk-java) as a git submodule (v26.0.3) |
+| `orbit-os-sdk-java/` | [Orbit OS Java SDK](https://github.com/OrbitOS-org/orbit-os-sdk-java) v26.0.3 — not in the repository; added by Orbit Studio (git-ignored) |
 | `orbit.project.json` | Orbit Studio project settings (device IP and signing paths go in the git-ignored `orbit.project.local.json`) |
 
 - **Recommended workflow:** open the folder in VS Code with Orbit Studio, then **Run** against a device in Developer Mode, or **Build + Deploy**.

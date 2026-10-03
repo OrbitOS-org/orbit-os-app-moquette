@@ -3,6 +3,8 @@
 build/
 packages/
 *.orb
+# Orbit OS Java SDK — downloaded by Orbit Studio (version in orbit.project.json)
+orbit-os-sdk-java/
 # TLS certificates and keys — never commit
 certs/grpc/
 # runtime data created when running the app locally (admin password hash, broker store)

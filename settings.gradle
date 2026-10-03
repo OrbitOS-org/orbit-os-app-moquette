@@ -11,7 +11,7 @@ plugins {
 
 rootProject.name = 'orbit-os-workspace-java'
 
-// ── Local SDK submodule ───────────────────────────────────────────────────────
+// ── Local SDK (orbit-os-sdk-java/, added by Orbit Studio) ─────────────────────
 include ':sdk'
 project(':sdk').projectDir = file('orbit-os-sdk-java')
 
