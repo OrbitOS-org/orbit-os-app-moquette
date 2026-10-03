@@ -1,0 +1,12 @@
+{
+  "package_id": "org.orbit-os.apps.moquette",
+  "name": "Moquette",
+  "version": "1.0.1",
+  "description": "MQTT broker (Moquette) for Orbit OS devices with a web admin UI: start/stop, live clients and activity, full broker configuration and MQTT users.",
+  "entry_point": "moquette.jar",
+  "type": "jar",
+  "permissions": [
+    "SystemService/*",
+    "AppHubService/*"
+  ]
+}

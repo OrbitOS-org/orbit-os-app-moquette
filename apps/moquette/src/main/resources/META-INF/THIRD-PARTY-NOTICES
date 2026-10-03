@@ -1,0 +1,34 @@
+Third-party components bundled in the Orbit OS Moquette app package (.orb)
+==========================================================================
+
+The packaged JAR includes the following open-source components. Each is
+distributed under its own license, reproduced or referenced below.
+
+Apache License, Version 2.0 (https://www.apache.org/licenses/LICENSE-2.0)
+- Moquette MQTT broker (io.moquette:moquette-broker 0.17) — Copyright Andrea Selva and contributors
+- Netty (io.netty:netty-* 4.1.93.Final) — Copyright The Netty Project
+- gRPC Java (io.grpc:grpc-* 1.62.2) — Copyright The gRPC Authors
+- Guava, failureaccess, Gson, Error Prone annotations, Android annotations (Google)
+- Jackson (com.fasterxml.jackson.core:jackson-*) — Copyright FasterXML
+- Dropwizard Metrics, Librato metrics, HikariCP, Apache Commons Codec
+- Okio, Kotlin standard library, JetBrains annotations
+- junixsocket (com.kohlschutter.junixsocket) — Copyright Christian Kohlschütter
+- PerfMark, reload4j, JSR-305 annotations
+- Orbit OS Java SDK (org.orbitos.sdk) — Copyright Orbit OS
+
+Mozilla Public License 2.0 / Eclipse Public License 1.0 (dual-licensed)
+- H2 MVStore (com.h2database:h2-mvstore 2.1.212) — https://h2database.com/html/license.html
+
+BSD 3-Clause License
+- Protocol Buffers Java Lite (com.google.protobuf:protobuf-javalite) — Copyright Google LLC
+
+MIT License
+- SLF4J (org.slf4j:slf4j-api, slf4j-reload4j) — Copyright QOS.ch
+- Checker Framework qualifiers (org.checkerframework:checker-qual)
+- Animal Sniffer annotations (org.codehaus.mojo:animal-sniffer-annotations)
+
+CDDL 1.1 / GPL 2.0 with Classpath Exception
+- javax.annotation-api 1.3.2
+
+The full list of resolved dependencies can be printed with:
+  ./gradlew :apps:moquette:dependencies --configuration runtimeClasspath

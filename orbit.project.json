@@ -1,0 +1,8 @@
+{
+  "language": "java",
+  "name": "orbit-os-app-moquette",
+  "appPath": "apps/moquette",
+  "certsDir": "certs/grpc",
+  "sdkVersion": "v26.0.3",
+  "sdkDevPackageNaming": false
+}

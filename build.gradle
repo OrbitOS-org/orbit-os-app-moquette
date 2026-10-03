@@ -1,0 +1,14 @@
+// Root build — shared configuration for all workspace projects (not :sdk, which manages itself).
+configure(subprojects.findAll { it.path != ':sdk' }) {
+    apply plugin: 'java'
+
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(17)
+        }
+    }
+
+    repositories {
+        mavenCentral()
+    }
+}

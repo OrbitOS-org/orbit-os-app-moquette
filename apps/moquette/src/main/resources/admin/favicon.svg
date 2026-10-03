@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Moquette">
+  <defs>
+    <linearGradient id="m" gradientUnits="userSpaceOnUse" x1="41" y1="0" x2="159" y2="0">
+      <stop offset="0" stop-color="#85cccf"/>
+      <stop offset="1" stop-color="#9986b2"/>
+    </linearGradient>
+    <clipPath id="rounded">
+      <rect width="64" height="64" rx="14" ry="14"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#rounded)">
+    <rect width="64" height="64" fill="#f4f4f5"/>
+    <g transform="translate(5 5) scale(0.27)">
+      <!-- plataforma -->
+      <polygon points="22,90 178,90 198,102 2,102" fill="#e3e3e3"/>
+      <!-- M -->
+      <path d="M41,8 L41,87 Q41,90 44,90 L61,90 Q64,90 64,87 L64,65
+               L100,90 L136,65 L136,87 Q136,90 139,90 L156,90 Q159,90 159,87
+               L159,8 L100,65 Z"
+            fill="url(#m)"/>
+      <!-- wordmark -->
+      <text x="100" y="120" text-anchor="middle" textLength="196" lengthAdjust="spacing"
+            font-family="Helvetica, Arial, sans-serif" font-size="18" font-weight="700"
+            fill="#6b6b72">MOQUETTE</text>
+      <!-- partículas teal -->
+      <g fill="#7fcfca">
+        <rect x="49.500" y="132.500" width="15" height="15" rx="4"/>
+        <circle cx="42" cy="148" r="5"/>
+        <circle cx="73" cy="158" r="4.500"/>
+        <circle cx="48" cy="164" r="6"/>
+        <circle cx="66" cy="178" r="4"/>
+        <circle cx="82" cy="187" r="2.500"/>
+      </g>
+      <!-- partículas roxas -->
+      <g fill="#9a7cc1">
+        <rect x="145" y="133" width="14" height="14" rx="4"/>
+        <circle cx="139" cy="142" r="4"/>
+        <circle cx="161" cy="157" r="4.500"/>
+        <circle cx="145" cy="165" r="4"/>
+        <circle cx="149" cy="181" r="2.500"/>
+      </g>
+    </g>
+  </g>
+</svg>

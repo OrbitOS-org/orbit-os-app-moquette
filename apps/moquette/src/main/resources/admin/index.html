@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>moquette — broker admin</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f5f5f7;
+    --card-bg: #ffffff;
+    --divider: rgba(0,0,0,.08);
+    --text: #1d1d1f;
+    --muted: #6e6e73;
+    --control-bg: rgba(0,0,0,.05);
+    --switch-off: #e9e9eb;
+    --header-bg: rgba(245,245,247,.78);
+    --grad-start: #5fd0c7;
+    --grad-end: #8c7fd8;
+    --good: #34c759;
+    --good-tint: rgba(52,199,89,.14);
+    --good-text: #1c7a3c;
+    --bad: #ff3b30;
+    --bad-tint: rgba(255,59,48,.12);
+    --bad-text: #c22a20;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 14px/1.5 var(--sans); -webkit-font-smoothing: antialiased;
+  }
+  .hidden { display: none !important; }
+  .mono { font-family: var(--mono); }
+
+  /* -- brand mark ------------------------------------------------------ */
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand-mark { border-radius: 22%; flex: none; display: block; }
+  .brand h1 { font-size: 17px; margin: 0; font-weight: 600; letter-spacing: .02em; text-transform: uppercase; }
+  .brand .sub { font-size: 12px; color: var(--muted); }
+
+  /* -- header ------------------------------------------------------ */
+  header {
+    position: sticky; top: 0; z-index: 10;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 24px; background: var(--header-bg);
+    -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--divider);
+  }
+  .header-right { display: flex; align-items: center; gap: 14px; }
+
+  /* -- layout ------------------------------------------------------ */
+  main { max-width: 900px; margin: 0 auto; padding: 28px 20px 60px; display: grid; gap: 28px; }
+  .about-card { max-width: 420px; margin: 40px auto 0; text-align: center; }
+  .about-mark { margin: 0 auto 20px; }
+  .about-card .list-row .row-label { color: var(--muted); }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 760px) { .row { grid-template-columns: 1fr; } }
+
+  /* -- phones ------------------------------------------------------ */
+  section { display: grid; gap: 10px; }
+  .section-title { font-size: 13px; font-weight: 600; color: var(--muted); margin: 0 0 2px 6px; }
+
+  /* -- cards & grouped lists ------------------------------------------------------ */
+  .card {
+    background: var(--card-bg); border-radius: 16px; padding: 20px;
+    box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.03);
+  }
+  .card h2 { font-size: 13px; font-weight: 600; color: var(--muted); margin: 0 0 14px; }
+
+  .list { background: var(--card-bg); border-radius: 14px; overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.03); }
+  .list-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    padding: 13px 16px; border-bottom: 1px solid var(--divider);
+  }
+  .list-row:last-child { border-bottom: none; }
+  .list-row .row-label { font-size: 14.5px; }
+  .list-row .row-hint { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .list-row input[type=text], .list-row input[type=number] {
+    text-align: right; border: none; background: transparent; color: var(--text);
+    font: inherit; font-size: 14.5px; width: 45%; min-width: 90px; padding: 4px 0;
+  }
+  .list-row input:focus { outline: none; }
+  .list-row.row-inactive .row-label,
+  .list-row.row-inactive .row-hint { opacity: .45; }
+  .list-row.row-inactive input { opacity: .45; }
+  .list-row:has(input:focus) { background: var(--control-bg); }
+
+  /* -- status ------------------------------------------------------ */
+  .status-line { display: flex; align-items: center; gap: 10px; }
+  .dot-lg { width: 12px; height: 12px; border-radius: 50%; background: var(--muted); flex: none;
+    box-shadow: 0 0 0 5px rgba(120,120,128,.12); }
+  .status-line.on .dot-lg { background: var(--good); box-shadow: 0 0 0 5px var(--good-tint); }
+  .status-line.off .dot-lg { background: var(--bad); box-shadow: 0 0 0 5px var(--bad-tint); }
+  .status-line b { font-size: 16px; font-weight: 600; }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 10px; border-radius: 999px; font-size: 12px; font-weight: 600;
+  }
+  .badge.on { background: var(--good-tint); color: var(--good-text); }
+  .badge.off { background: var(--bad-tint); color: var(--bad-text); }
+  .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+  .badge.on .dot { background: var(--good); }
+  .badge.off .dot { background: var(--bad); }
+
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 16px; }
+  .stat { background: var(--control-bg); border-radius: 12px; padding: 12px 10px; text-align: center; }
+  .stat b { display: block; font-size: 21px; font-weight: 600; letter-spacing: -.02em; }
+  .stat span { color: var(--muted); font-size: 11px; }
+
+  /* -- buttons ------------------------------------------------------ */
+  button {
+    font: inherit; font-weight: 600; font-size: 14px; border: none; cursor: pointer;
+    border-radius: 10px; padding: 9px 16px; color: white;
+    background: linear-gradient(135deg, var(--grad-start), var(--grad-end));
+    transition: opacity .15s ease, transform .08s ease;
+  }
+  button:active { transform: scale(.97); }
+  button:disabled { opacity: .4; cursor: default; transform: none; }
+  button.secondary { background: var(--control-bg); color: var(--text); }
+  button.danger { background: var(--bad); }
+  button.ghost {
+    background: transparent; color: var(--bad); padding: 5px 8px; font-size: 12.5px; font-weight: 500;
+  }
+  button.ghost.neutral { color: var(--muted); }
+
+  /* -- forms / fields (login, account) ------------------------------------------------------ */
+  form { display: grid; gap: 14px; }
+  .field { display: grid; gap: 6px; }
+  .field label { font-size: 12.5px; color: var(--muted); font-weight: 500; }
+  .field input[type=text], .field input[type=password] {
+    background: var(--control-bg); border: 1px solid transparent; color: var(--text);
+    border-radius: 10px; padding: 10px 12px; font: inherit; font-size: 14.5px;
+  }
+  .field input:focus {
+    outline: none; border-color: var(--grad-end);
+    box-shadow: 0 0 0 3px rgba(140,127,216,.18);
+  }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .actions { display: flex; gap: 12px; align-items: center; margin-top: 2px; }
+  #configMsg, #accountMsg, #loginMsg { font-size: 12.5px; }
+  #configMsg.ok, #accountMsg.ok { color: var(--good-text); }
+  #configMsg.err, #accountMsg.err, #loginMsg.err { color: var(--bad-text); }
+  .hint { color: var(--muted); font-size: 12.5px; margin: 0; }
+
+  /* -- switch ------------------------------------------------------ */
+  .switch { position: relative; display: inline-flex; width: 46px; height: 28px; flex: none; cursor: pointer; }
+  .switch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+  .switch .track {
+    position: absolute; inset: 0; background: var(--switch-off); border-radius: 999px;
+    transition: background .18s ease;
+  }
+  .switch .thumb {
+    position: absolute; top: 2px; left: 2px; width: 24px; height: 24px; border-radius: 50%;
+    background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: transform .18s ease;
+  }
+  .switch input:checked ~ .track { background: linear-gradient(135deg, var(--grad-start), var(--grad-end)); }
+  .switch input:checked ~ .track .thumb { transform: translateX(18px); }
+  .switch input:focus-visible ~ .track { box-shadow: 0 0 0 3px rgba(140,127,216,.35); }
+
+  /* -- tables / activity ------------------------------------------------------ */
+  #clientsBox { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th { text-align: left; padding: 0 4px 10px; color: var(--muted); font-weight: 500; font-size: 12px; }
+  tbody td { padding: 10px 4px; border-top: 1px solid var(--divider); vertical-align: middle; }
+  tbody tr:first-child td { border-top: none; }
+  .empty { color: var(--muted); font-style: italic; padding: 6px 0; }
+
+  .activity-item { display: flex; align-items: center; gap: 10px; padding: 9px 2px; border-bottom: 1px solid var(--divider); font-size: 12.5px; }
+  .activity-item:last-child { border-bottom: none; }
+  .activity-item .type {
+    display: flex; align-items: center; gap: 6px; width: 92px; flex: none;
+    font-size: 11.5px; font-weight: 600; color: var(--muted);
+  }
+  .activity-item .type::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--muted); flex: none; }
+  .activity-item .type.CONNECT { color: var(--good-text); }
+  .activity-item .type.CONNECT::before { background: var(--good); }
+  .activity-item .type.PUBLISH { color: var(--grad-end); }
+  .activity-item .type.PUBLISH::before { background: var(--grad-end); }
+  .activity-item .type.ERROR { color: var(--bad-text); }
+  .activity-item .type.ERROR::before { background: var(--bad); }
+  .activity-item .time { color: var(--muted); flex: none; }
+
+  /* -- login ------------------------------------------------------ */
+  #loginScreen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  #loginScreen .card { width: 100%; max-width: 340px; text-align: center; }
+  #loginScreen .brand-mark { margin: 0 auto 16px; }
+  #loginScreen h1 { font-size: 19px; margin: 0 0 4px; font-weight: 600; letter-spacing: -.01em; }
+  #loginScreen p.sub { color: var(--muted); margin: 0 0 22px; font-size: 13px; }
+  #loginScreen form { text-align: left; }
+  #loginScreen button[type=submit] { width: 100%; padding: 11px; margin-top: 4px; }
+
+  /* -- phones — placed last so it always wins the cascade regardless of
+     where the base rule for the same selector is defined above ------------------------------------------------------ */
+  @media (max-width: 480px) {
+    header { padding: 10px 16px; flex-wrap: wrap; row-gap: 8px; }
+    header .brand-mark { width: 40px; height: 40px; }
+    .brand h1 { font-size: 15px; }
+    #loginScreen .brand-mark { width: 130px; height: 130px; }
+    .header-right { gap: 8px; }
+    main { padding: 20px 14px 48px; gap: 20px; }
+    .grid2 { grid-template-columns: 1fr; }
+    .list-row { flex-wrap: wrap; }
+    .list-row input[type=text], .list-row input[type=number] {
+      width: 100%; text-align: left; margin-top: 2px;
+    }
+    .actions { flex-wrap: wrap; }
+    .stats { gap: 6px; }
+    .stat { padding: 10px 4px; }
+    .stat b { font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="loginScreen" class="hidden">
+  <div class="card">
+    <svg class="brand-mark" width="84" height="84" viewBox="0 0 64 64" aria-hidden="true">
+      <defs>
+        <linearGradient id="loginMarkGrad" gradientUnits="userSpaceOnUse" x1="41" y1="0" x2="159" y2="0">
+          <stop offset="0" stop-color="#85cccf"/>
+          <stop offset="1" stop-color="#9986b2"/>
+        </linearGradient>
+        <clipPath id="loginMarkClip"><rect width="64" height="64" rx="14" ry="14"/></clipPath>
+      </defs>
+      <g clip-path="url(#loginMarkClip)">
+        <rect width="64" height="64" fill="#f4f4f5"/>
+        <g transform="translate(5 5) scale(0.27)">
+          <polygon points="22,90 178,90 198,102 2,102" fill="#e3e3e3"/>
+          <path d="M41,8 L41,87 Q41,90 44,90 L61,90 Q64,90 64,87 L64,65
+                   L100,90 L136,65 L136,87 Q136,90 139,90 L156,90 Q159,90 159,87
+                   L159,8 L100,65 Z" fill="url(#loginMarkGrad)"/>
+          <text x="100" y="120" text-anchor="middle" textLength="196" lengthAdjust="spacing"
+                font-family="Helvetica, Arial, sans-serif" font-size="18" font-weight="700"
+                fill="#6b6b72">MOQUETTE</text>
+          <g fill="#7fcfca">
+            <rect x="49.500" y="132.500" width="15" height="15" rx="4"/>
+            <circle cx="42" cy="148" r="5"/>
+            <circle cx="73" cy="158" r="4.500"/>
+            <circle cx="48" cy="164" r="6"/>
+            <circle cx="66" cy="178" r="4"/>
+            <circle cx="82" cy="187" r="2.500"/>
+          </g>
+          <g fill="#9a7cc1">
+            <rect x="145" y="133" width="14" height="14" rx="4"/>
+            <circle cx="139" cy="142" r="4"/>
+            <circle cx="161" cy="157" r="4.500"/>
+            <circle cx="145" cy="165" r="4"/>
+            <circle cx="149" cy="181" r="2.500"/>
+          </g>
+        </g>
+      </g>
+    </svg>
+    <p class="sub">Sign in to manage your MQTT broker.</p>
+    <form id="loginForm">
+      <div class="field">
+        <label>Username</label>
+        <input type="text" name="username" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" name="password" autocomplete="current-password" required>
+      </div>
+      <button type="submit">Log In</button>
+      <span id="loginMsg"></span>
+    </form>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+<header>
+  <div class="brand">
+    <svg class="brand-mark" width="56" height="56" viewBox="0 0 64 64" aria-hidden="true">
+      <defs>
+        <linearGradient id="headerMarkGrad" gradientUnits="userSpaceOnUse" x1="41" y1="0" x2="159" y2="0">
+          <stop offset="0" stop-color="#85cccf"/>
+          <stop offset="1" stop-color="#9986b2"/>
+        </linearGradient>
+        <clipPath id="headerMarkClip"><rect width="64" height="64" rx="14" ry="14"/></clipPath>
+      </defs>
+      <g clip-path="url(#headerMarkClip)">
+        <rect width="64" height="64" fill="#f4f4f5"/>
+        <g transform="translate(5 5) scale(0.27)">
+          <polygon points="22,90 178,90 198,102 2,102" fill="#e3e3e3"/>
+          <path d="M41,8 L41,87 Q41,90 44,90 L61,90 Q64,90 64,87 L64,65
+                   L100,90 L136,65 L136,87 Q136,90 139,90 L156,90 Q159,90 159,87
+                   L159,8 L100,65 Z" fill="url(#headerMarkGrad)"/>
+          <text x="100" y="120" text-anchor="middle" textLength="196" lengthAdjust="spacing"
+                font-family="Helvetica, Arial, sans-serif" font-size="18" font-weight="700"
+                fill="#6b6b72">MOQUETTE</text>
+          <g fill="#7fcfca">
+            <rect x="49.500" y="132.500" width="15" height="15" rx="4"/>
+            <circle cx="42" cy="148" r="5"/>
+            <circle cx="73" cy="158" r="4.500"/>
+            <circle cx="48" cy="164" r="6"/>
+            <circle cx="66" cy="178" r="4"/>
+            <circle cx="82" cy="187" r="2.500"/>
+          </g>
+          <g fill="#9a7cc1">
+            <rect x="145" y="133" width="14" height="14" rx="4"/>
+            <circle cx="139" cy="142" r="4"/>
+            <circle cx="161" cy="157" r="4.500"/>
+            <circle cx="145" cy="165" r="4"/>
+            <circle cx="149" cy="181" r="2.500"/>
+          </g>
+        </g>
+      </g>
+    </svg>
+    <div>
+      <h1>moquette</h1>
+      <div class="sub">MQTT broker admin</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <span id="statusBadge" class="badge off"><span class="dot"></span><span>checking…</span></span>
+    <button id="aboutTabBtn" class="ghost neutral">About</button>
+    <button id="logoutBtn" class="ghost neutral">Log Out</button>
+  </div>
+</header>
+
+<main id="dashboardView">
+  <div class="row">
+    <div class="card">
+      <h2>Status</h2>
+      <div class="status-line off" id="statusLine">
+        <span class="dot-lg"></span>
+        <b id="statusText">Checking…</b>
+      </div>
+      <div class="stats">
+        <div class="stat"><b id="statClients">–</b><span>clients</span></div>
+        <div class="stat"><b id="statUptime">–</b><span>uptime</span></div>
+        <div class="stat"><b id="statPort">–</b><span>mqtt port</span></div>
+      </div>
+      <div class="actions" style="margin-top:16px;">
+        <button id="toggleBtn" class="secondary" disabled style="width:100%;">…</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Connected clients</h2>
+      <div id="clientsBox"><p class="empty">Loading…</p></div>
+    </div>
+  </div>
+
+  <form id="configForm">
+    <section>
+      <div class="section-title">Startup</div>
+      <div class="list">
+        <label class="list-row">
+          <div>
+            <div class="row-label">Start automatically</div>
+            <div class="row-hint">Broker starts automatically on startup.</div>
+          </div>
+          <span class="switch">
+            <input type="checkbox" name="enabled" id="enabled">
+            <span class="track"><span class="thumb"></span></span>
+          </span>
+        </label>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-title">Network</div>
+      <div class="list">
+        <div class="list-row">
+          <div>
+            <div class="row-label">Bind host</div>
+            <div class="row-hint">0.0.0.0 = every network interface</div>
+          </div>
+          <input type="text" name="host" placeholder="0.0.0.0">
+        </div>
+        <div class="list-row">
+          <span class="row-label">MQTT port</span>
+          <input type="number" name="mqttPort" min="1" max="65535">
+        </div>
+        <label class="list-row">
+          <span class="row-label">MQTT-over-WebSocket</span>
+          <span class="switch">
+            <input type="checkbox" name="websocketEnabled" id="websocketEnabled">
+            <span class="track"><span class="thumb"></span></span>
+          </span>
+        </label>
+        <div class="list-row" id="websocketPortRow">
+          <span class="row-label">WebSocket port</span>
+          <input type="number" name="websocketPort" min="1" max="65535">
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-title">Persistence</div>
+      <div class="list">
+        <label class="list-row">
+          <div>
+            <div class="row-label">Enable persistence</div>
+            <div class="row-hint">Sessions &amp; queues survive restarts</div>
+          </div>
+          <span class="switch">
+            <input type="checkbox" name="persistenceEnabled" id="persistenceEnabled">
+            <span class="track"><span class="thumb"></span></span>
+          </span>
+        </label>
+        <div class="list-row" id="dataPathRow">
+          <div>
+            <div class="row-label">Data directory</div>
+            <div class="row-hint">Relative to the app's own folder on the device</div>
+          </div>
+          <input type="text" name="dataPath">
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-title">Security</div>
+      <div class="list">
+        <label class="list-row">
+          <div>
+            <div class="row-label">Allow anonymous connections</div>
+            <div class="row-hint">Off requires at least one MQTT user below — otherwise nobody can connect</div>
+          </div>
+          <span class="switch">
+            <input type="checkbox" name="allowAnonymous" id="allowAnonymous">
+            <span class="track"><span class="thumb"></span></span>
+          </span>
+        </label>
+        <div class="list-row">
+          <div>
+            <div class="row-label">ACL file</div>
+            <div class="row-hint">Optional. Per-user topic permissions, must already exist</div>
+          </div>
+          <input type="text" name="aclFile" placeholder="config/acl.conf">
+        </div>
+        <div class="list-row">
+          <div>
+            <div class="row-label">Persistent client expiration</div>
+            <div class="row-hint">Drops stored sessions/messages for clients that never reconnect</div>
+          </div>
+          <input type="text" name="persistentClientExpiration" placeholder="never, e.g. 14d">
+        </div>
+        <div class="list-row">
+          <div>
+            <div class="row-label">Session queue size</div>
+            <div class="row-hint">Advanced — per-client message buffer, rarely needs changing</div>
+          </div>
+          <input type="number" name="sessionQueueSize" min="1">
+        </div>
+      </div>
+    </section>
+
+    <div class="actions">
+      <button type="submit">Save Configuration</button>
+      <button type="button" class="secondary" id="reloadBtn">Revert</button>
+      <span id="configMsg"></span>
+    </div>
+    <p class="hint">
+      Saving applies immediately: with "Start automatically" on, the broker (re)starts
+      with these settings; with it off, the broker stops and the settings are kept for
+      next time you hit "Start broker".
+    </p>
+  </form>
+
+  <section>
+    <div class="section-title">MQTT users</div>
+    <div class="card">
+      <p class="hint" style="margin: 0 0 14px;">
+        Credentials for MQTT clients (not this admin page — that's the Account
+        section below), stored in <span class="mono" id="mqttUsersPath">–</span>.
+        Used automatically once you add a user: with "Allow anonymous" off,
+        only these credentials can connect; with it on, clients with no
+        username still get in anonymously, but a client claiming one of these
+        usernames still needs the right password.
+      </p>
+      <div id="mqttUsersBox"><p class="empty">Loading…</p></div>
+      <form id="mqttUserForm" class="grid2" style="margin-top: 14px;">
+        <div class="field">
+          <label>Username</label>
+          <input type="text" name="username" autocomplete="off" required>
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input type="password" name="password" autocomplete="new-password" required>
+        </div>
+        <div class="actions" style="grid-column: 1 / -1;">
+          <button type="submit">Add / Update User</button>
+          <span id="mqttUserMsg"></span>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-title">Recent activity</div>
+    <div class="card">
+      <div id="activityBox"><p class="empty">Loading…</p></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-title">Account</div>
+    <div class="card">
+      <p class="hint" style="margin: 0 0 16px;">
+        Signed in as <b id="accountUsername" class="mono">–</b>. Change these before
+        exposing the admin UI beyond your own machine — it ships with
+        <span class="mono">admin / admin</span> by default.
+      </p>
+      <form id="accountForm">
+        <div class="grid2">
+          <div class="field">
+            <label>New username (optional)</label>
+            <input type="text" name="username" autocomplete="username">
+          </div>
+          <div class="field">
+            <label>New password (optional)</label>
+            <input type="password" name="newPassword" autocomplete="new-password">
+          </div>
+        </div>
+        <div class="field">
+          <label>Current password (required to confirm)</label>
+          <input type="password" name="currentPassword" autocomplete="current-password" required>
+        </div>
+        <div class="actions">
+          <button type="submit">Update Credentials</button>
+          <span id="accountMsg"></span>
+        </div>
+      </form>
+    </div>
+  </section>
+</main>
+
+<main id="aboutView" class="hidden">
+  <div class="card about-card">
+    <svg class="brand-mark about-mark" width="120" height="120" viewBox="0 0 64 64" aria-hidden="true">
+      <defs>
+        <linearGradient id="aboutMarkGrad" gradientUnits="userSpaceOnUse" x1="41" y1="0" x2="159" y2="0">
+          <stop offset="0" stop-color="#85cccf"/>
+          <stop offset="1" stop-color="#9986b2"/>
+        </linearGradient>
+        <clipPath id="aboutMarkClip"><rect width="64" height="64" rx="14" ry="14"/></clipPath>
+      </defs>
+      <g clip-path="url(#aboutMarkClip)">
+        <rect width="64" height="64" fill="#f4f4f5"/>
+        <g transform="translate(5 5) scale(0.27)">
+          <polygon points="22,90 178,90 198,102 2,102" fill="#e3e3e3"/>
+          <path d="M41,8 L41,87 Q41,90 44,90 L61,90 Q64,90 64,87 L64,65
+                   L100,90 L136,65 L136,87 Q136,90 139,90 L156,90 Q159,90 159,87
+                   L159,8 L100,65 Z" fill="url(#aboutMarkGrad)"/>
+          <text x="100" y="120" text-anchor="middle" textLength="196" lengthAdjust="spacing"
+                font-family="Helvetica, Arial, sans-serif" font-size="18" font-weight="700"
+                fill="#6b6b72">MOQUETTE</text>
+          <g fill="#7fcfca">
+            <rect x="49.500" y="132.500" width="15" height="15" rx="4"/>
+            <circle cx="42" cy="148" r="5"/>
+            <circle cx="73" cy="158" r="4.500"/>
+            <circle cx="48" cy="164" r="6"/>
+            <circle cx="66" cy="178" r="4"/>
+            <circle cx="82" cy="187" r="2.500"/>
+          </g>
+          <g fill="#9a7cc1">
+            <rect x="145" y="133" width="14" height="14" rx="4"/>
+            <circle cx="139" cy="142" r="4"/>
+            <circle cx="161" cy="157" r="4.500"/>
+            <circle cx="145" cy="165" r="4"/>
+            <circle cx="149" cy="181" r="2.500"/>
+          </g>
+        </g>
+      </g>
+    </svg>
+    <p class="hint" style="text-align:center; margin: 4px 0 20px;">
+      An embedded MQTT broker for OrbitOS, built on Moquette.
+    </p>
+    <div class="list">
+      <div class="list-row">
+        <span class="row-label">Moquette broker</span>
+        <span class="mono" id="aboutMoquetteVersion">–</span>
+      </div>
+      <div class="list-row">
+        <span class="row-label">Moquette app</span>
+        <span class="mono" id="aboutAppVersion">–</span>
+      </div>
+    </div>
+  </div>
+</main>
+</div>
+
+<script>
+const $ = (sel, root = document) => root.querySelector(sel);
+let refreshLoopsStarted = false;
+
+function showLogin() {
+  $('#app').classList.add('hidden');
+  $('#loginScreen').classList.remove('hidden');
+}
+
+function showApp() {
+  $('#loginScreen').classList.add('hidden');
+  $('#app').classList.remove('hidden');
+  if (!refreshLoopsStarted) {
+    refreshLoopsStarted = true;
+    refreshStatus();
+    refreshClients();
+    refreshActivity();
+    refreshMqttUsers();
+    setInterval(refreshStatus, 3000);
+    setInterval(refreshClients, 4000);
+    setInterval(refreshActivity, 4000);
+  }
+}
+
+/** fetch() wrapper for authenticated endpoints — bounces to the login screen on 401. */
+async function apiFetch(url, opts) {
+  const res = await fetch(url, opts);
+  if (res.status === 401) {
+    showLogin();
+    throw new Error('session expired — please log in again');
+  }
+  return res;
+}
+
+async function checkSession() {
+  const res = await fetch('/api/session');
+  const s = await res.json();
+  if (s.authenticated) {
+    $('#accountUsername').textContent = s.username;
+    showApp();
+  } else {
+    showLogin();
+  }
+}
+
+$('#loginForm').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const msg = $('#loginMsg');
+  msg.className = ''; msg.textContent = '';
+  const fd = new FormData(ev.target);
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: fd.get('username'), password: fd.get('password') }),
+    });
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error || 'login failed');
+    $('#accountUsername').textContent = body.username;
+    ev.target.reset();
+    showApp();
+  } catch (e) {
+    msg.className = 'err'; msg.textContent = e.message;
+  }
+});
+
+$('#logoutBtn').addEventListener('click', async () => {
+  try { await fetch('/api/logout', { method: 'POST' }); } catch (e) { /* ignore */ }
+  showLogin();
+});
+
+$('#aboutTabBtn').addEventListener('click', () => {
+  const showingAbout = !$('#aboutView').classList.contains('hidden');
+  $('#dashboardView').classList.toggle('hidden', !showingAbout);
+  $('#aboutView').classList.toggle('hidden', showingAbout);
+  $('#aboutTabBtn').textContent = showingAbout ? 'About' : 'Dashboard';
+});
+
+$('#accountForm').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const msg = $('#accountMsg');
+  msg.className = ''; msg.textContent = 'Saving…';
+  const fd = new FormData(ev.target);
+  try {
+    const res = await apiFetch('/api/account', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: fd.get('username') || '',
+        newPassword: fd.get('newPassword') || '',
+        currentPassword: fd.get('currentPassword'),
+      }),
+    });
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error || 'failed to update credentials');
+    $('#accountUsername').textContent = body.username;
+    ev.target.reset();
+    msg.className = 'ok'; msg.textContent = 'Credentials updated.';
+  } catch (e) {
+    msg.className = 'err'; msg.textContent = e.message;
+  }
+});
+
+function fmtUptime(seconds) {
+  if (!seconds) return '0s';
+  const d = Math.floor(seconds / 86400), h = Math.floor(seconds % 86400 / 3600),
+        m = Math.floor(seconds % 3600 / 60), s = Math.floor(seconds % 60);
+  if (d) return `${d}d ${h}h`;
+  if (h) return `${h}h ${m}m`;
+  if (m) return `${m}m ${s}s`;
+  return `${s}s`;
+}
+
+function fillConfigForm(cfg) {
+  const form = $('#configForm');
+  for (const [key, val] of Object.entries(cfg)) {
+    const el = form.elements[key];
+    if (!el) continue;
+    if (el.type === 'checkbox') el.checked = !!val;
+    else el.value = val ?? '';
+  }
+  updateDependentRows();
+}
+
+/** Dims rows whose setting only matters while their governing switch is on. */
+function updateDependentRows() {
+  const form = $('#configForm');
+  $('#websocketPortRow').classList.toggle('row-inactive', !form.elements.websocketEnabled.checked);
+  $('#dataPathRow').classList.toggle('row-inactive', !form.elements.persistenceEnabled.checked);
+}
+
+$('#websocketEnabled').addEventListener('change', updateDependentRows);
+$('#persistenceEnabled').addEventListener('change', updateDependentRows);
+
+function readConfigForm() {
+  const form = $('#configForm');
+  const fd = new FormData(form);
+  return {
+    enabled: form.elements.enabled.checked,
+    host: fd.get('host'),
+    mqttPort: Number(fd.get('mqttPort')),
+    websocketEnabled: form.elements.websocketEnabled.checked,
+    websocketPort: Number(fd.get('websocketPort')),
+    persistenceEnabled: form.elements.persistenceEnabled.checked,
+    dataPath: fd.get('dataPath'),
+    allowAnonymous: form.elements.allowAnonymous.checked,
+    aclFile: fd.get('aclFile') || '',
+    sessionQueueSize: Number(fd.get('sessionQueueSize')),
+    persistentClientExpiration: fd.get('persistentClientExpiration') || '',
+  };
+}
+
+let lastLoadedConfig = null;
+
+async function refreshStatus() {
+  try {
+    const res = await apiFetch('/api/status');
+    const s = await res.json();
+    const badge = $('#statusBadge');
+    badge.className = 'badge ' + (s.running ? 'on' : 'off');
+    badge.querySelector('span:last-child').textContent = s.running ? 'running' : 'stopped';
+
+    const line = $('#statusLine');
+    line.className = 'status-line ' + (s.running ? 'on' : 'off');
+    $('#statusText').textContent = s.running ? 'Broker running' : 'Broker stopped';
+
+    $('#statClients').textContent = s.clientCount;
+    $('#statUptime').textContent = fmtUptime(s.uptimeSeconds);
+    $('#statPort').textContent = s.config.mqttPort;
+    if (s.moquetteVersion) $('#aboutMoquetteVersion').textContent = s.moquetteVersion;
+    if (s.appVersion) $('#aboutAppVersion').textContent = s.appVersion;
+
+    const btn = $('#toggleBtn');
+    btn.disabled = false;
+    btn.className = s.running ? 'danger' : '';
+    btn.textContent = s.running ? 'Stop broker' : 'Start broker';
+    btn.dataset.action = s.running ? 'stop' : 'start';
+
+    if (!lastLoadedConfig) {
+      lastLoadedConfig = s.config;
+      fillConfigForm(s.config);
+    }
+  } catch (e) { /* device unreachable this tick, or session expired — leave last known state */ }
+}
+
+$('#toggleBtn').addEventListener('click', async () => {
+  const btn = $('#toggleBtn');
+  const action = btn.dataset.action || 'start';
+  btn.disabled = true;
+  const msg = $('#configMsg');
+  msg.className = ''; msg.textContent = '';
+  try {
+    let res;
+    if (action === 'start') {
+      // Always start with whatever is currently on screen — never the last
+      // *saved* config — so this can't silently bind the old port after
+      // you've changed it in the form but not hit "Save configuration" yet.
+      const cfg = readConfigForm();
+      cfg.enabled = true;
+      res = await apiFetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(cfg),
+      });
+    } else {
+      res = await apiFetch('/api/broker/stop', { method: 'POST' });
+    }
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error || `failed to ${action} broker`);
+    const cfg = body.config || body;
+    lastLoadedConfig = cfg;
+    fillConfigForm(cfg);
+    msg.className = 'ok';
+    msg.textContent = action === 'start' ? 'Broker started.' : 'Broker stopped.';
+  } catch (e) {
+    msg.className = 'err'; msg.textContent = e.message;
+  }
+  refreshStatus();
+});
+
+async function refreshClients() {
+  try {
+    const res = await apiFetch('/api/clients');
+    const clients = await res.json();
+    const box = $('#clientsBox');
+    if (!clients.length) { box.innerHTML = '<p class="empty">No clients connected.</p>'; return; }
+    const rows = clients.map(c => `
+      <tr>
+        <td class="mono">${escapeHtml(c.clientId)}</td>
+        <td class="mono">${escapeHtml(c.address)}:${c.port}</td>
+        <td><button class="danger" onclick="kickClient('${encodeURIComponent(c.clientId)}')">Kick</button></td>
+      </tr>`).join('');
+    box.innerHTML = `<table><thead><tr><th>Client ID</th><th>Address</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+  } catch (e) { /* session expired this tick */ }
+}
+
+async function refreshActivity() {
+  try {
+    const res = await apiFetch('/api/activity');
+    const entries = await res.json();
+    const box = $('#activityBox');
+    if (!entries.length) { box.innerHTML = '<p class="empty">No activity yet.</p>'; return; }
+    box.innerHTML = entries.slice(0, 50).map(e => `
+      <div class="activity-item">
+        <span class="type ${e.type}">${e.type}</span>
+        <span class="time">${new Date(e.time).toLocaleTimeString()}</span>
+        <span class="mono">${escapeHtml(e.clientId || '')} ${escapeHtml(e.detail || '')}</span>
+      </div>`).join('');
+  } catch (e) { /* session expired this tick */ }
+}
+
+async function kickClient(id) {
+  await apiFetch(`/api/clients/${id}/kick`, { method: 'POST' });
+  refreshClients();
+}
+
+async function refreshMqttUsers() {
+  try {
+    const res = await apiFetch('/api/mqtt-users');
+    const data = await res.json();
+    $('#mqttUsersPath').textContent = data.path;
+    const box = $('#mqttUsersBox');
+    if (!data.usernames.length) { box.innerHTML = '<p class="empty">No MQTT users yet.</p>'; return; }
+    const rows = data.usernames.map(u => `
+      <tr>
+        <td class="mono">${escapeHtml(u)}</td>
+        <td><button class="danger" onclick="removeMqttUser('${encodeURIComponent(u)}')">Remove</button></td>
+      </tr>`).join('');
+    box.innerHTML = `<table><thead><tr><th>Username</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+  } catch (e) { /* session expired this tick */ }
+}
+
+async function removeMqttUser(username) {
+  await apiFetch(`/api/mqtt-users/${username}/delete`, { method: 'POST' });
+  refreshMqttUsers();
+}
+
+$('#mqttUserForm').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const msg = $('#mqttUserMsg');
+  msg.className = ''; msg.textContent = 'Saving…';
+  const fd = new FormData(ev.target);
+  try {
+    const res = await apiFetch('/api/mqtt-users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: fd.get('username'), password: fd.get('password') }),
+    });
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error || 'failed to save user');
+    ev.target.reset();
+    $('#mqttUsersPath').textContent = body.path;
+    const box = $('#mqttUsersBox');
+    const rows = body.usernames.map(u => `
+      <tr>
+        <td class="mono">${escapeHtml(u)}</td>
+        <td><button class="danger" onclick="removeMqttUser('${encodeURIComponent(u)}')">Remove</button></td>
+      </tr>`).join('');
+    box.innerHTML = `<table><thead><tr><th>Username</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+    msg.className = 'ok'; msg.textContent = 'Saved.';
+  } catch (e) {
+    msg.className = 'err'; msg.textContent = e.message;
+  }
+});
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+$('#configForm').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const msg = $('#configMsg');
+  msg.className = ''; msg.textContent = 'Applying…';
+  try {
+    const res = await apiFetch('/api/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(readConfigForm()),
+    });
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error || 'failed to apply config');
+    lastLoadedConfig = body;
+    fillConfigForm(body);
+    msg.className = 'ok'; msg.textContent = 'Applied — broker restarted.';
+  } catch (e) {
+    msg.className = 'err'; msg.textContent = e.message;
+  }
+});
+
+$('#reloadBtn').addEventListener('click', () => {
+  if (lastLoadedConfig) fillConfigForm(lastLoadedConfig);
+});
+
+checkSession();
+</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+Orbit OS Moquette MQTT Broker
+Copyright 2026 Orbit OS
+
+This product includes software developed by Orbit OS
+for the Orbit OS platform (https://www.orbit-os.org/).
+
+This product embeds the Moquette MQTT broker
+(https://github.com/moquette-io/moquette), Copyright Andrea Selva and the
+Moquette contributors, licensed under the Apache License, Version 2.0.
+
+Third-party components bundled in the distributed package and their
+licenses are listed in THIRD-PARTY-NOTICES.

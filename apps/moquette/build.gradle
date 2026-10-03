@@ -1,0 +1,109 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.guardsquare:proguard-gradle:7.4.2'
+    }
+}
+
+plugins {
+    id 'application'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+}
+
+dependencies {
+    implementation project(':sdk')
+    implementation libs.moquette.broker
+    implementation libs.gson
+}
+
+application {
+    mainClass = 'org.orbitos.apps.moquette.App'
+}
+
+shadowJar {
+    mergeServiceFiles()
+    archiveBaseName = 'moquette'
+    archiveClassifier = null
+    exclude 'META-INF/*.SF'
+    exclude 'META-INF/*.DSA'
+    exclude 'META-INF/*.RSA'
+    exclude 'META-INF/LICENSE*'
+    exclude 'META-INF/NOTICE*'
+    exclude 'META-INF/DEPENDENCIES'
+    exclude 'META-INF/INDEX.LIST'
+    exclude 'about.html'
+    exclude 'META-INF/services/org.apache.commons.logging.LogFactory'
+    exclude '**/*.md'
+    exclude '**/*.txt'
+    exclude '**/about_files/**'
+    exclude '**/OSGI-INF/**'
+    exclude 'org/checkerframework/**'
+    exclude '**/META-INF/versions/**'
+    exclude '**/build.properties'
+    exclude '**/version.properties'
+    exclude 'io/grpc/netty/**/NettyServer*.class'
+    exclude 'io/grpc/netty/**/NettyServer*$*.class'
+    // Keep only Linux targets (amd64 + aarch64) for junixsocket native libs
+    exclude 'lib/aarch64-MacOSX-clang/**'
+    exclude 'lib/aarch64-Windows10-clang/**'
+    exclude 'lib/amd64-DragonFlyBSD-clang/**'
+    exclude 'lib/amd64-FreeBSD-clang/**'
+    exclude 'lib/amd64-NetBSD-clang/**'
+    exclude 'lib/amd64-OpenBSD-clang/**'
+    exclude 'lib/amd64-SunOS-clang/**'
+    exclude 'lib/amd64-Windows10-clang/**'
+    exclude 'lib/ppc64-AIX-clang/**'
+    exclude 'lib/ppc64le-Linux-clang/**'
+    exclude 'lib/ppc64-OS400-clang/**'
+    exclude 'lib/riscv64-Linux-clang/**'
+    exclude 'lib/s390x-Linux-clang/**'
+    exclude 'lib/x86_64-MacOSX-clang/**'
+    exclude 'lib/arm-Linux-clang/**'
+    // TLS certs are for dev-machine testing only; on-device apps connect via Unix socket
+    exclude 'certs/**'
+    manifest {
+        attributes 'Main-Class': 'main.App'
+    }
+}
+
+tasks.register('proguard', proguard.gradle.ProGuardTask) {
+    dependsOn shadowJar
+
+    injars shadowJar.archiveFile
+    outjars "${buildDir}/libs/moquette-minified.jar"
+
+    def javaHome = System.getProperty('java.home')
+    libraryjars "${javaHome}/jmods/java.base.jmod"
+    libraryjars "${javaHome}/jmods/java.logging.jmod"
+    libraryjars "${javaHome}/jmods/java.desktop.jmod"
+
+    configuration 'proguard-rules.pro'
+    verbose
+    printmapping "${buildDir}/libs/mapping.txt"
+    printseeds  "${buildDir}/seeds.txt"
+    printusage  "${buildDir}/usage.txt"
+
+    doLast {
+        def original = file("${buildDir}/libs/moquette.jar")
+        def minified = file("${buildDir}/libs/moquette-minified.jar")
+        if (minified.exists()) {
+            if (original.exists()) original.delete()
+            minified.renameTo(original)
+            println "✓ JAR minified: ${original.length() / 1024 / 1024}MB"
+        }
+    }
+}
+
+tasks.register('minifyJar') {
+    dependsOn 'proguard'
+    description = 'Minify the JAR using ProGuard'
+}
+
+// Distribution tasks from application+shadow plugins are not used (packaging via Orbit Studio)
+['distZip', 'distTar', 'installDist',
+ 'shadowDistZip', 'shadowDistTar', 'installShadowDist',
+ 'startScripts', 'startShadowScripts'].each { name ->
+    tasks.named(name) { enabled = false }
+}

@@ -1,0 +1,29 @@
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+    }
+}
+
+plugins {
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '0.8.0'
+}
+
+rootProject.name = 'orbit-os-workspace-java'
+
+// ── Local SDK submodule ───────────────────────────────────────────────────────
+include ':sdk'
+project(':sdk').projectDir = file('orbit-os-sdk-java')
+
+// ── Apps ──────────────────────────────────────────────────────────────────────
+// Auto-include every module under apps/ (any directory containing a build.gradle).
+// Covers the main app (apps/<name>) and bundled examples (apps/examples/<name>),
+// including examples added later via "Orbit: Add SDK".
+def appsDir = file('apps')
+if (appsDir.isDirectory()) {
+    appsDir.eachDirRecurse { d ->
+        if (new File(d, 'build.gradle').isFile()) {
+            include ':' + rootDir.toPath().relativize(d.toPath()).toString().replace(File.separator, ':')
+        }
+    }
+}

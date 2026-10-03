@@ -1,0 +1,14 @@
+# build output
+.gradle/
+build/
+packages/
+*.orb
+# TLS certificates and keys — never commit
+certs/grpc/
+# runtime data created when running the app locally (admin password hash, broker store)
+apps/moquette/config/
+apps/moquette/data/
+# local editor and Orbit Studio settings
+.vscode/
+orbit.project.local.json
+.DS_Store
